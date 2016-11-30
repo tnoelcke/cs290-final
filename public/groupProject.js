@@ -6,7 +6,23 @@ var isLoggedIn = false;
 
 //sets up modal when the login button is clicked.
 var hiddenA = document.getElementById('login')
-hiddenA.addEventListener('click',removeModal)
+hiddenA.addEventListener('click', handleLogin)
+
+var hiddenB = document.getElementById('new-user');
+hiddenB.addEventListener('click', handleCreateNewUser);
+
+function handleLogin() {
+    removeModal();
+    document.querySelector('.modal-accept-button').addEventListener('click', login);
+    button.removeEventListener('click', null);
+}
+
+function handleCreateNewUser() {
+    removeModal();
+    var button = document.querySelector('.modal-accept-button');
+    button.addEventListener('click', createNewUser);
+    button.removeEventListener('click', null);
+}
 
 function removeModal()
 {
@@ -20,7 +36,6 @@ function removeModal()
     //sets up event listeners on modal buttons
 	document.querySelector('.modal-close-button').addEventListener('click', hideModal);
 	document.querySelector('.modal-cancel-button').addEventListener('click', hideModal);
-	document.querySelector('.modal-accept-button').addEventListener('click', login);
 }
 	
 	
@@ -42,7 +57,7 @@ document.getElementById("add-note-modal").setAttribute('class','hidden')
 //sets up to send a get to the server with the userId and Password in the 
 //body so the server can check and make sure that user exists and that
 //the password matches
-function login() {
+function getModalData() {
     var element1 = document.getElementById("login-input-userid");
     var element2 = document.getElementById("login-input-password") ;
     var userId = element1.value;
@@ -55,12 +70,16 @@ function login() {
     } else {
         hideModal();
         //window.location = "/pong";
-        getPongPage(userId, password);
+        var user = {
+            userId: userId,
+            password: password
+        }
+        return user;
     }
 
 }
 
-function getPongPage(userId, password) {
+function getPongPage(userId, password, callback) {
     //sets up get request
     var url = '/pong';
     var getRequest = new XMLHttpRequest();
@@ -76,4 +95,45 @@ function getPongPage(userId, password) {
 
 }
 
+function login() {
+    var user = getModalData();
+    getPongPage(user.userId, user.password, function (err) {
+        if (err) {
+            console.log("error: " + err);
+        }
+    });
+}
+
+
+
+function createNewUser(callback) {
+    var user = getModalData();
+    postNewUser(user,function (err){
+        if (err) {
+            console.log("There was an error posting the new user: " + err);
+        }
+    })
+}
+
+function postNewUser(user, callback) {
+    var url = '/newuser';
+    var postRequest = new XMLHttpRequest();
+    postRequest.open('POST', url);
+    postRequest.setRequestHeader('Content-Type', 'application/json');
+    console.log(user.userId, user.password);
+
+    postRequest.addEventListener('load', function (event) {
+
+        var error;
+        if (event.target.status !== 200) {
+            error = event.target.response;
+        }
+        callback(error);
+    });
+
+    postRequest.send(JSON.stringify({
+        userId: user.userId,
+        password: user.password
+    }));
+}
 
